@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from socket import *
 from struct import *
@@ -10,8 +10,10 @@ import config
 DEBUG = 0
 
 # Delay between consecutive commands 
-DELAY = 0.3
+DELAY = 0.002
 
+# Maximum number of retries when talking to Integra
+MAX_ATTEMPTS = 3
 
 # device types as defined by satel manual
 PARTITION = "00"
@@ -22,20 +24,9 @@ def ihex(byte):
     return str(hex(byte)[2:])
 
 
-''' If you send a second command too soon, ethm1 replies with BUSY messages
-so in this demo I am introducing a short pause before each request
-obviously, in real life it should be handled smarter, but hey, it is only a demo
-'''
-
-
-def wait():
-    time.sleep(DELAY)
-
-
 ''' Function to calculate a checksum as per Satel manual
 beware - it might have a bug!
 '''
-
 
 def checksum(command):
     crc = 0x147A;
@@ -67,18 +58,33 @@ def sendcommand(command):
         print("-- ------------- --", file=sys.stderr)
         print("Sent %d bytes" % len(data), file=sys.stderr)
 
-    sock = socket(AF_INET, SOCK_STREAM)
-    sock.connect((config.host, config.port))
-    if not sock.send(data): raise Exception("Error Sending message.")
-    resp = sock.recv(100)
-    if DEBUG:
-        print("-- Receving data --", file=sys.stderr)
-        for c in resp: print("<<<0x%X ('%c')" % (c, c), file=sys.stderr)
-        print("-- ------------- --", file=sys.stderr)
-    sock.close()
+    failcount=0
+    while True:
+        sock = socket(AF_INET, SOCK_STREAM)
+        sock.connect((config.host, config.port))
+        if not sock.send(data): raise Exception("Error Sending message.")
+        resp = sock.recv(100)
+        if DEBUG:
+            print("-- Receving data --", file=sys.stderr)
+            for c in resp: print("<<<0x%X ('%c')" % (c, c), file=sys.stderr)
+            print("-- ------------- --", file=sys.stderr)
+        sock.close()
+        # integra will respond "Busy!" if it gets next message too early
+        if (resp[0:8] == b'\x10\x42\x75\x73\x79\x21\x0D\x0A'):
+            failcount=failcount+1
+            if failcount<MAX_ATTEMPTS:
+                time.sleep(DELAY*failcount)
+            else:
+                break 
+        else:
+            break
+
 
     # check message
+        
     if (resp[0:2] != b'\xFE\xFE'):
+        for c in resp:
+            print("0x%X" % c)
         raise Exception("Wrong header - got %X%X" % (resp[0], resp[1]))
     if (resp[-2:] != b'\xFE\x0D'):
         raise Exception("Wrong footer - got %X%X" % (resp[-2], resp[-1]))
@@ -178,7 +184,6 @@ def iViolation():
     for i in range(0, 15):
         for b in range(0, 7):
             if 2 ** b & (r[i]):
-                wait()
                 v += str(8 * i + b + 1) + " " + iName(8 * i + b + 1, ZONE) + ":*\n"
     print(v)
 
@@ -193,7 +198,6 @@ def iOutputs():
     for i in range(0, 15):
         for b in range(0, 7):
             if 2 ** b & r[i]:
-                wait()
                 o += str(8 * i + b + 1) + " " + iName(8 * i + b + 1, OUTPUT) + ": ON\n"
     print(o)
 
@@ -252,19 +256,13 @@ if len(sys.argv) < 1:
     sys.exit(1)
 
 iVersion()
-wait()
 print("Integra time: " + iTime())
-wait()
 partname = iName(1, PARTITION)
-wait()
 print("%s armed: %s" % (partname, iArmStatus(0)))
-wait()
 print("Violated zones:")
 iViolation()
-wait()
 print("Active outputs:")
 iOutputs()
-wait()
 print("Switching output:")
-iSwitchOutput(config.usercode, 11)
+#iSwitchOutput(config.usercode, 11)
 print("Thanks for watching.")
