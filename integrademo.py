@@ -90,11 +90,12 @@ def sendcommand(command):
         raise Exception("Wrong footer - got %X%X" % (resp[-2], resp[-1]))
 
     output = resp[2:-2].replace(b'\xFE\xF0', b'\xFE')
-    if output[0] == 0xEF:
-        raise Exception("Integra reported an error code %X" % output[1])
-    if output[0] != bytearray.fromhex(command[0:2])[0]:
-        raise Exception(
-            "Response to a wrong command - got %X expected %X" % (output[0], bytearray.fromhex(command[0:2])[0]))
+    if output[0:2] != b'\xEF\xFF' and output[0:2] != b'\xEF\x00':  # These are not errors
+        if output[0] == 0xEF:
+            raise Exception("Integra reported an error code %X" % output[1])
+        if output[0] != bytearray.fromhex(command[0:2])[0]:
+            raise Exception(
+                "Response to a wrong command - got %X expected %X" % (output[0], bytearray.fromhex(command[0:2])[0]))
 
     c = checksum(bytearray(output[0:-2]))
     if (256 * output[-2:-1][0] + output[-1:][0]) != c:
@@ -244,8 +245,6 @@ def iSwitchOutput(code, output):
     output = outputAsString(output)
     cmd = "91" + code + output
     r = sendcommand(cmd)
-    print(r)
-
 
 
 #### BASIC DEMO
