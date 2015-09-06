@@ -169,7 +169,7 @@ def iName(number, devicetype):
     if len(number) == 1:
         number = "0" + number
     r = sendcommand("EE" + devicetype + str(number))
-    return r[3:].decode("utf-8")
+    return r[3:].decode(config.encoding)
 
 
 ''' Checks violated zones. This make separate calls to get name of the violated zones. In a real life software,
