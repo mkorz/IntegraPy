@@ -34,7 +34,7 @@ def checksum(command):
         # rotate (crc 1 bit left)
         crc = ((crc << 1) & 0xFFFF) | (crc & 0x8000) >> 15
         crc = crc ^ 0xFFFF
-        crc = crc + (crc >> 8) + b;
+        crc = (crc + (crc >> 8) + b) & 0xFFFF
     return crc;
 
 
