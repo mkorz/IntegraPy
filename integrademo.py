@@ -239,7 +239,6 @@ def outputAsString (output):
 ''' Switches the state of a given output
 '''
 
-
 def iSwitchOutput(code, output):
     while len(code) < 16:
         code += "F"
@@ -266,3 +265,5 @@ iOutputs()
 print("Switching output:")
 #iSwitchOutput(config.usercode, 11)
 print("Thanks for watching.")
+
+# vim: set ts=4 sw=4 et :
