@@ -75,6 +75,7 @@ def sendcommand(command):
             if failcount<MAX_ATTEMPTS:
                 time.sleep(DELAY*failcount)
             else:
+                print ("Got %c consecutive failures - giving up on %s command" % (MAX_ATTEMPTS, command))
                 break 
         else:
             break
