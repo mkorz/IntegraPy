@@ -5,6 +5,7 @@ from struct import *
 import time
 import sys
 import config
+from datetime import date
 
 ## Extra debugging
 DEBUG = 0
@@ -20,8 +21,9 @@ PARTITION = "00"
 ZONE = "01"
 OUTPUT = "04"
 
+
 def ihex(byte):
-    return str(hex(byte)[2:])
+    return format(byte,'02X')
 
 
 ''' Function to calculate a checksum as per Satel manual
@@ -75,7 +77,7 @@ def sendcommand(command):
             if failcount<MAX_ATTEMPTS:
                 time.sleep(DELAY*failcount)
             else:
-                print ("Got %c consecutive failures - giving up on %s command" % (MAX_ATTEMPTS, command))
+                print ("Got %d consecutive failures - giving up on %s command" % (MAX_ATTEMPTS, command))
                 break 
         else:
             break
@@ -246,6 +248,47 @@ def iSwitchOutput(code, output):
     cmd = "91" + code + output
     r = sendcommand(cmd)
 
+def getBaseYear():
+    baseYear = 0
+    def getYear():
+        nonlocal baseYear
+        if baseYear == 0:
+            baseYear = int(date.today().year / 4) * 4
+        return baseYear
+    return getYear()
+
+
+def parseEvent(event):
+    result = {}
+    result['year'] = getBaseYear() + (event[0] >> 6)
+    result['month'] = event[2] >> 4
+    result['day'] = event[1] & 0x1F
+    time= ((event[2] & 0xF) << 8 ) + event[3]
+    result['hour'] = int (time/60)
+    result['minute'] = time-result['hour']*60
+    result['partition'] = event[4] >> 3
+    result['code'] = ((event[4] & 0x3) << 8 )  +  event[5]
+    result['source'] = event[6]
+    result['object'] = event[7] >> 5
+    return result
+
+def getEventLongDescription(eventCode):
+    cmd = "8F" + ihex((eventCode | 0xF000))
+    result = sendcommand(cmd)
+    return result[5:].decode(config.encoding)
+
+def getLogs(count):
+    index = "FFFFFF"
+    read = 0
+    while read < count:
+        cmd = "8C" + index
+        result = sendcommand(cmd)
+        index = ("%s%s%s" % (ihex(result[8]) , ihex(result[9]) , ihex(result[10])))
+        res=parseEvent(result)
+        print ("%02d-%02d-%02d %02d:%02d Partition: %02d Source: %02d User:%02d" % (res['year'], res['month'], res['day'], res['hour'], res['minute'], res['partition'], res['source'], res['object']))
+        print(getEventLongDescription(res['code']))
+        read = read + 1
+
 
 #### BASIC DEMO
 ''' ... and now it is the time to demonstrate what have we learnt today
@@ -253,6 +296,7 @@ def iSwitchOutput(code, output):
 if len(sys.argv) < 1:
     print("Execution: %s IP_ADDRESS_OF_THE_ETHM1_MODULE" % sys.argv[0], file=sys.stderr)
     sys.exit(1)
+
 
 iVersion()
 print("Integra time: " + iTime())
@@ -262,8 +306,10 @@ print("Violated zones:")
 iViolation()
 print("Active outputs:")
 iOutputs()
-print("Switching output:")
+#print("Switching output:")
 #iSwitchOutput(config.usercode, 11)
+print("Getting last log entries:")
+getLogs(5)
 print("Thanks for watching.")
 
 # vim: set ts=4 sw=4 et :
