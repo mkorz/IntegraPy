@@ -45,3 +45,6 @@ Temporary Items
 
 # Pycharm project dir
 .idea
+
+__pycache__
+.cache
