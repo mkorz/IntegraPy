@@ -146,6 +146,12 @@ class EventRecord(LittleEndianStructure):
     def event_index(self):
         return bytearray(self._event_index)
 
+    def __repr__(self):
+        return (
+            'Integra event: {0.year:02d}-{0.month:02d}-{0.day:02d} '
+            '{0.time} code: {0.code}'
+        ).format(self)
+
 
 def parse_event(record):
     '''
@@ -153,7 +159,7 @@ def parse_event(record):
     '''
     evt = EventRecord()
     fit = min(len(record), sizeof(evt))
-    memmove(addressof(evt), record, fit)
+    memmove(addressof(evt), bytes(record), fit)
 
     return evt
 
@@ -269,7 +275,7 @@ class Integra(object):
 
     def get_event(self, event_id='FFFFFF'):
         resp = self.run_command('8C' + event_id)
-        print(repr(resp))
+        return parse_event(resp)
 
 #
 #
