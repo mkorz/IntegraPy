@@ -7,7 +7,7 @@ Satel Integra and ETHM-1 modules
 import time
 import logging
 
-
+from datetime import datetime
 from struct import unpack
 from binascii import hexlify
 from socket import socket, AF_INET, SOCK_STREAM
@@ -166,6 +166,19 @@ class Integra(object):
             settings_stored=(resp[13] == 255)
         )
 
+    def get_time(self):
+        resp = hexlify(self.run_command('1A'))
+        return datetime(
+            year=int(resp[:4]),
+            month=int(resp[4:6]),
+            day=int(resp[6:8]),
+            hour=int(resp[8:10]),
+            minute=int(resp[10:12]),
+            second=int(resp[12:14])
+        )
+        #     itime = ihex(r[0]) + ihex(r[1]) + "-" + ihex(r[2]) + "-" + ihex(r[3]) + " " + ihex(r[4]) + ":" + ihex(
+        #         r[5]) + ":" + ihex(r[6])
+        #     return itime
 #
 #
 # ''' Gets the Integra time. Unfortunately, it is being sent in a rather weird format, hence the mess below
@@ -173,10 +186,7 @@ class Integra(object):
 #
 #
 # def iTime():
-#     r = sendcommand("1A")
-#     itime = ihex(r[0]) + ihex(r[1]) + "-" + ihex(r[2]) + "-" + ihex(r[3]) + " " + ihex(r[4]) + ":" + ihex(
-#         r[5]) + ":" + ihex(r[6])
-#     return itime
+#
 #
 #
 # ''' Gets name of the zone and output. Could be easily extended to get name of users, expanders and so on

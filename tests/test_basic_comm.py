@@ -1,10 +1,21 @@
+# -*- coding: UTF-8 -*-
+import pytest
 from . import INTEGRA_HOST, INTEGRA_PORT, INTEGRA_USER_CODE
 
 
-def test_get_version():
+@pytest.fixture
+def integra():
     from ..integra import Integra
 
-    i = Integra(INTEGRA_USER_CODE, INTEGRA_HOST, INTEGRA_PORT)
-    res = i.get_version()
+    return Integra(INTEGRA_USER_CODE, INTEGRA_HOST, INTEGRA_PORT)
+
+
+def test_get_version(integra):
+    res = integra.get_version()
     assert 'INTEGRA' in res['model']
     assert '20' in res['version']
+
+
+def test_get_time(integra):
+    res = integra.get_time()
+    assert res.year >= 2017
