@@ -19,3 +19,8 @@ def test_get_version(integra):
 def test_get_time(integra):
     res = integra.get_time()
     assert res.year >= 2017
+
+
+def test_get_event(integra):
+    res = integra.get_event('FFFFFF')
+    assert res == 'Event'

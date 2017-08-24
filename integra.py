@@ -7,6 +7,7 @@ Satel Integra and ETHM-1 modules
 import time
 import logging
 
+from ctypes import LittleEndianStructure, c_uint8, memmove, sizeof, addressof
 from datetime import datetime
 from struct import unpack
 from binascii import hexlify
@@ -36,6 +37,22 @@ HARDWARE_MODEL = {
 LANGUAGES = {
     0: 'Polish',
     1: 'English'
+}
+EVENT_MONITORING = {
+    0: 'new',
+    1: 'sent',
+    2: 'should not occur',
+    3: 'not monitored'
+}
+EVENT_CLASSES = {
+    0: 'zone and tamper alarms',
+    1: 'partition and expander alarms',
+    2: 'arming, disarming, alarm clearing',
+    3: 'zone bypasses and unbypasses',
+    4: 'access control',
+    5: 'troubles',
+    6: 'user functions',
+    7: 'system events'
 }
 
 
@@ -72,6 +89,73 @@ def log_frame(msg, frame):
         hexlify(frame),
         len(frame)
     )
+
+
+class EventRecord(LittleEndianStructure):
+    _fields_ = [
+        ('_monitoring_s1', c_uint8, 2),
+        ('_monitoring_s2', c_uint8, 2),
+        ('present', c_uint8, 1),
+        ('not_empty', c_uint8, 1),
+        ('year', c_uint8, 2),
+        ('day', c_uint8, 5),
+        ('_class', c_uint8, 3),
+        ('minutes_high', c_uint8, 4),
+        ('month', c_uint8, 4),
+        ('minutes_low', c_uint8, 8),
+        ('code_high', c_uint8, 2),
+        ('restore', c_uint8, 1),
+        ('partition', c_uint8, 5),
+        ('code_low', c_uint8, 8),
+        ('source_number', c_uint8, 8),
+        ('user_control_number', c_uint8, 5),
+        ('object_number', c_uint8, 3),
+        ('_event_index', c_uint8 * 3),
+        ('_calling_event_index', c_uint8 * 3)
+    ]
+
+    @property
+    def monitoring_s1(self):
+        return EVENT_MONITORING[self._monitoring_s1]
+
+    @property
+    def monitoring_s2(self):
+        return EVENT_MONITORING[self._monitoring_s2]
+
+    @property
+    def event_class(self):
+        return EVENT_CLASSES[self._class]
+
+    @property
+    def time(self):
+        minutes = self.minutes_high * 0x100 + self.minutes_low
+        return '{:02d}:{:02d}'.format(
+            minutes // 60,
+            minutes % 60
+        )
+
+    @property
+    def code(self):
+        return self.code_high * 0x100 + self.code_low
+
+    @property
+    def calling_event_index(self):
+        return bytearray(self._calling_event_index)
+
+    @property
+    def event_index(self):
+        return bytearray(self._event_index)
+
+
+def parse_event(record):
+    '''
+    Parses an event from 8C command
+    '''
+    evt = EventRecord()
+    fit = min(len(record), sizeof(evt))
+    memmove(addressof(evt), record, fit)
+
+    return evt
 
 
 class Integra(object):
@@ -156,6 +240,9 @@ class Integra(object):
         return output[1:-2]
 
     def get_version(self):
+        '''
+        Returns a dict describing connected Integra
+        '''
         resp = self.run_command('7E')
         return dict(
             model='INTEGRA ' + HARDWARE_MODEL.get(resp[0], 'UNKNOWN'),
@@ -167,6 +254,9 @@ class Integra(object):
         )
 
     def get_time(self):
+        '''
+        Get current Integra time
+        '''
         resp = hexlify(self.run_command('1A'))
         return datetime(
             year=int(resp[:4]),
@@ -176,17 +266,11 @@ class Integra(object):
             minute=int(resp[10:12]),
             second=int(resp[12:14])
         )
-        #     itime = ihex(r[0]) + ihex(r[1]) + "-" + ihex(r[2]) + "-" + ihex(r[3]) + " " + ihex(r[4]) + ":" + ihex(
-        #         r[5]) + ":" + ihex(r[6])
-        #     return itime
-#
-#
-# ''' Gets the Integra time. Unfortunately, it is being sent in a rather weird format, hence the mess below
-# '''
-#
-#
-# def iTime():
-#
+
+    def get_event(self, event_id='FFFFFF'):
+        resp = self.run_command('8C' + event_id)
+        print(repr(resp))
+
 #
 #
 # ''' Gets name of the zone and output. Could be easily extended to get name of users, expanders and so on
