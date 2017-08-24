@@ -46,5 +46,7 @@ Temporary Items
 # Pycharm project dir
 .idea
 
+# Python
 __pycache__
 .cache
+*.pyc

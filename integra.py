@@ -1,4 +1,5 @@
 # -*- coding: UTF-8 -*-
+from __future__ import unicode_literals, print_function
 '''
 integra -- a module implementing Satel intgration protocol for
 Satel Integra and ETHM-1 modules
@@ -37,12 +38,13 @@ LANGUAGES = {
     1: 'English'
 }
 
+
 def checksum(command):
     '''
     Satel communication checksum
     '''
     crc = 0x147A
-    for b in command:
+    for b in bytearray(command):
         # rotate (crc 1 bit left)
         crc = ((crc << 1) & 0xFFFF) | (crc & 0x8000) >> 15
         crc = crc ^ 0xFFFF
@@ -104,7 +106,7 @@ class Integra(object):
             if not sock.send(command):
                 raise Exception("Error sending frame.")
 
-            resp = sock.recv(100)
+            resp = bytearray(sock.recv(100))
             log_frame('Response received: ', resp)
             sock.close()
 
@@ -135,7 +137,7 @@ class Integra(object):
         elif output[0] != command[2]:
             raise Exception(
                 "Response to a wrong command - got %X expected %X" % (
-                    output[0], command[2]
+                    ord(output[0]), ord(command[2])
                 )
             )
 
@@ -155,7 +157,6 @@ class Integra(object):
 
     def get_version(self):
         resp = self.run_command('7E')
-        print(resp[12])
         return dict(
             model='INTEGRA ' + HARDWARE_MODEL.get(resp[0], 'UNKNOWN'),
             version='{:c}.{:c}{:c} {:c}{:c}{:c}{:c}-{:c}{:c}-{:c}{:c}'.format(
@@ -164,26 +165,6 @@ class Integra(object):
             language=LANGUAGES.get(resp[12], 'Other'),
             settings_stored=(resp[13] == 255)
         )
-# def ihex(byte):
-#     return str(hex(byte)[2:])
-#
-#
-#
-
-#
-#
-# ''' I only bothered with few of them, feel free to add all newer models
-# '''
-#
-#
-#
-#
-#
-# ''' Gets the firmware version as reported by panel, language and whether settings has been copied to flash
-# again - I only check if language is English or other
-# '''
-#
-#
 
 #
 #
