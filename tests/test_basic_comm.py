@@ -22,5 +22,13 @@ def test_get_time(integra):
 
 
 def test_get_event(integra):
-    res = integra.get_event('FFFFFF')
-    assert res == 'Event'
+    res = integra.get_event(b'FFFFFF')
+    assert 'Integra event' in repr(res)
+
+
+def test_get_events(integra):
+    event_idx = b'FFFFFF'
+    for idx in range(10):
+        res = integra.get_event(event_idx)
+        print(repr(res))
+        event_idx = res.event_index

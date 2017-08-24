@@ -36,5 +36,5 @@ def test_parse_event():
     assert result.object_number == 0
     assert result.user_control_number == 2
 
-    assert result.calling_event_index == b'\xff\xff\xff'
-    assert result.event_index == b'\x06h\xde'
+    assert result.calling_event_index == b'FFFFFF'
+    assert result.event_index == b'0668DE'

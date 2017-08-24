@@ -6,81 +6,18 @@ Satel Integra and ETHM-1 modules
 '''
 import time
 import logging
-
-from ctypes import LittleEndianStructure, c_uint8, memmove, sizeof, addressof
 from datetime import datetime
 from struct import unpack
 from binascii import hexlify
 from socket import socket, AF_INET, SOCK_STREAM
 
 
+from .constants import HEADER, FOOTER, HARDWARE_MODEL, LANGUAGES
+from .framing import (
+    checksum, prepare_frame, parse_event
+)
+
 log = logging.getLogger(__name__)
-
-
-# device types as defined by Satel manual
-PARTITION = "00"
-ZONE = "01"
-OUTPUT = "04"
-
-HEADER = b'\xFE\xFE'
-FOOTER = b'\xFE\x0D'
-HARDWARE_MODEL = {
-    0: "24",
-    1: "32",
-    2: "64",
-    3: "128",
-    4: "128-WRL SIM300",
-    66: "64 PLUS",
-    67: "128 PLUS",
-    132: "128-WRL LEON"
-}
-LANGUAGES = {
-    0: 'Polish',
-    1: 'English'
-}
-EVENT_MONITORING = {
-    0: 'new',
-    1: 'sent',
-    2: 'should not occur',
-    3: 'not monitored'
-}
-EVENT_CLASSES = {
-    0: 'zone and tamper alarms',
-    1: 'partition and expander alarms',
-    2: 'arming, disarming, alarm clearing',
-    3: 'zone bypasses and unbypasses',
-    4: 'access control',
-    5: 'troubles',
-    6: 'user functions',
-    7: 'system events'
-}
-
-
-def checksum(command):
-    '''
-    Satel communication checksum
-    '''
-    crc = 0x147A
-    for b in bytearray(command):
-        # rotate (crc 1 bit left)
-        crc = ((crc << 1) & 0xFFFF) | (crc & 0x8000) >> 15
-        crc = crc ^ 0xFFFF
-        crc = (crc + (crc >> 8) + b) & 0xFFFF
-
-    return crc
-
-
-def prepare_frame(command):
-    '''
-    Creates a communication frame (as per Satel manual)
-    '''
-    data = bytearray.fromhex(command)
-    c = checksum(data)
-    data.append(c >> 8)
-    data.append(c & 0xFF)
-    data = data.replace(b'\xFE', b'\xFE\xF0')
-
-    return HEADER + data + FOOTER
 
 
 def log_frame(msg, frame):
@@ -89,79 +26,6 @@ def log_frame(msg, frame):
         hexlify(frame),
         len(frame)
     )
-
-
-class EventRecord(LittleEndianStructure):
-    _fields_ = [
-        ('_monitoring_s1', c_uint8, 2),
-        ('_monitoring_s2', c_uint8, 2),
-        ('present', c_uint8, 1),
-        ('not_empty', c_uint8, 1),
-        ('year', c_uint8, 2),
-        ('day', c_uint8, 5),
-        ('_class', c_uint8, 3),
-        ('minutes_high', c_uint8, 4),
-        ('month', c_uint8, 4),
-        ('minutes_low', c_uint8, 8),
-        ('code_high', c_uint8, 2),
-        ('restore', c_uint8, 1),
-        ('partition', c_uint8, 5),
-        ('code_low', c_uint8, 8),
-        ('source_number', c_uint8, 8),
-        ('user_control_number', c_uint8, 5),
-        ('object_number', c_uint8, 3),
-        ('_event_index', c_uint8 * 3),
-        ('_calling_event_index', c_uint8 * 3)
-    ]
-
-    @property
-    def monitoring_s1(self):
-        return EVENT_MONITORING[self._monitoring_s1]
-
-    @property
-    def monitoring_s2(self):
-        return EVENT_MONITORING[self._monitoring_s2]
-
-    @property
-    def event_class(self):
-        return EVENT_CLASSES[self._class]
-
-    @property
-    def time(self):
-        minutes = self.minutes_high * 0x100 + self.minutes_low
-        return '{:02d}:{:02d}'.format(
-            minutes // 60,
-            minutes % 60
-        )
-
-    @property
-    def code(self):
-        return self.code_high * 0x100 + self.code_low
-
-    @property
-    def calling_event_index(self):
-        return bytearray(self._calling_event_index)
-
-    @property
-    def event_index(self):
-        return bytearray(self._event_index)
-
-    def __repr__(self):
-        return (
-            'Integra event: {0.year:02d}-{0.month:02d}-{0.day:02d} '
-            '{0.time} code: {0.code}'
-        ).format(self)
-
-
-def parse_event(record):
-    '''
-    Parses an event from 8C command
-    '''
-    evt = EventRecord()
-    fit = min(len(record), sizeof(evt))
-    memmove(addressof(evt), bytes(record), fit)
-
-    return evt
 
 
 class Integra(object):
@@ -273,8 +137,8 @@ class Integra(object):
             second=int(resp[12:14])
         )
 
-    def get_event(self, event_id='FFFFFF'):
-        resp = self.run_command('8C' + event_id)
+    def get_event(self, event_id=b'FFFFFF'):
+        resp = self.run_command(b'8C' + event_id)
         return parse_event(resp)
 
 #
