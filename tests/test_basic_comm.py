@@ -32,3 +32,14 @@ def test_get_events(integra):
         res = integra.get_event(event_idx)
         print(repr(res))
         event_idx = res.event_index
+
+
+def test_get_name(integra):
+    for nmb in range(1, 31):
+        try:
+            nme = integra.get_name(3, 129 + nmb)
+            print(nme)
+        except:
+            print('Błąd z ', nmb)
+
+    assert 'Name:' in repr(nme)

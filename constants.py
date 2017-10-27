@@ -44,7 +44,8 @@ OBJECT_KINDS = {
      0: 'no addictional description',
      1: 'partition/zone|expander|keypad',
      2: 'partition/user',
-     3: 'partition keypad/user (partition keypad address in PPPPPR) (not LCD keypad, but LED partition keypad, e.g. INT-S)',
+     3: 'partition keypad/user (partition keypad address in PPPPPR) '
+        '(not LCD keypad, but LED partition keypad, e.g. INT-S)',
      4: 'zone|expander|keypad',
      5: 'partition',
      6: 'keypad/user',
@@ -53,9 +54,11 @@ OBJECT_KINDS = {
      9: 'telephone',
      10: 'output of telephone relay type',
      11: 'partition/data bus',
-     12: 'partition/output|expander (partition not important for main panel outputs)',
+     12: 'partition/output|expander (partition not important for '
+         'main panel outputs)',
      13: 'partition/output|expander (partition not important for outputs)',
-     14: 'telephone in PPPPP/user (telephone: 0 - unknown, 1.. - phone number)',
+     14: 'telephone in PPPPP/user (telephone: 0 - unknown, 1.. - '
+         'phone number)',
      15: 'partition/timer',
      30: 'beginning of TCP/IP address (keypad address in PPPPP)',
      31: '3rd and 4th bytes of TCP/IP address',

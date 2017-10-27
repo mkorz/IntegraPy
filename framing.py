@@ -2,7 +2,14 @@
 '''
 Protocol framing
 '''
-from ctypes import LittleEndianStructure, c_uint8, memmove, sizeof, addressof
+from ctypes import (
+    LittleEndianStructure,
+    c_uint8,
+    c_char,
+    memmove,
+    sizeof,
+    addressof
+)
 from binascii import hexlify, unhexlify
 
 
@@ -30,7 +37,7 @@ def prepare_frame(command):
     '''
     Creates a communication frame (as per Satel manual)
     '''
-    data = bytearray(unhexlify(command)) # bytearray.fromhex(command)
+    data = bytearray(unhexlify(command))
     c = checksum(data)
     data.append(c >> 8)
     data.append(c & 0xFF)
@@ -61,6 +68,8 @@ class EventRecord(LittleEndianStructure):
         ('_event_index', c_uint8 * 3),
         ('_calling_event_index', c_uint8 * 3)
     ]
+
+    integra = None
 
     @property
     def monitoring_s1(self):
@@ -108,11 +117,36 @@ class EventRecord(LittleEndianStructure):
             (self.code, self.restore), (0, 'UNKNOWN')
         )[1]
 
+    @property
+    def source(self):
+        source_kind = EVENT_DESCRIPTIONS.get(
+            (self.code, self.restore), (0, 'UNKNOWN')
+        )[0]
+
+        if source_kind == 3:
+            return self.integra.get_name(2, self.source_number).name
+        else:
+            return 'Not implemented'
+
+    @property
+    def keypad(self):
+        source_kind = EVENT_DESCRIPTIONS.get(
+            (self.code, self.restore), (0, 'UNKNOWN')
+        )[0]
+
+        if source_kind == 3:
+            return self.integra.get_name(
+                3, 129 + self.restore * 32 + self.partition
+            ).name
+        else:
+            return 'Not implemented'
+
     def __repr__(self):
         return (
             'Integra event: {0.year:02d}-{0.month:02d}-{0.day:02d} '
             '{0.time}, code: {0.code}, description: {0.description}, '
-            'object kind: {0.object_kind}, source number: {0.source_number}'
+            'object kind: {0.object_kind}, source number: {0.source_number}, '
+            'source: {0.source}, keypad: {0.keypad}'
         ).format(self)
 
 
@@ -125,3 +159,43 @@ def parse_event(record):
     memmove(addressof(evt), bytes(record), fit)
 
     return evt
+
+
+class NameRecord(LittleEndianStructure):
+    _fields_ = [
+        ('_device_type', c_uint8),
+        ('device_number', c_uint8),
+        ('_device_function', c_uint8),
+        ('_device_name', c_char * 16),
+        ('serial', c_uint8)
+    ]
+
+    encoding = 'cp1250'
+
+    @property
+    def device_type(self):
+        return OBJECT_KINDS.get(self._device_type, 'Unknown')
+
+    @property
+    def device_function(self):
+        return self._device_function
+
+    @property
+    def name(self):
+        return self._device_name.decode(self.encoding).strip()
+
+    def __repr__(self):
+        return (
+            'Name: {0.name}, type: {0.device_type}'
+        ).format(self)
+
+
+def parse_name(record):
+    '''
+    Parses a name from EE command
+    '''
+    nme = NameRecord()
+    fit = min(len(record), sizeof(nme))
+    memmove(addressof(nme), bytes(record), fit)
+
+    return nme

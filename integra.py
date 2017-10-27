@@ -14,10 +14,11 @@ from socket import socket, AF_INET, SOCK_STREAM
 
 from .constants import HEADER, FOOTER, HARDWARE_MODEL, LANGUAGES
 from .framing import (
-    checksum, prepare_frame, parse_event
+    checksum, prepare_frame, parse_event, parse_name
 )
 
 log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 
 def log_frame(msg, frame):
@@ -48,6 +49,10 @@ class Integra(object):
         self.delay = delay
         # Maximum repetitions
         self.max_attempts = max_attempts
+        # Name cache
+        # Keys: (kind, number)
+        # Values: NameRecords
+        self._name_cache = {}
 
     def run_command(self, cmd):
         command = prepare_frame(cmd)
@@ -78,11 +83,13 @@ class Integra(object):
             raise Exception("Wrong footer - got {}".format(hexlify(resp[-2:])))
 
         output = resp[2:-2].replace(b'\xFE\xF0', b'\xFE')
+        log.debug('Output: %s', repr(output))
 
         # EF - result
-        if output[0] == b'\xEF':
+        if output[0] == 0xEF:
+            log.debug('Error output: %s', repr(output))
             # FF - command will be processed, 00 - OK
-            if not output[1] in b'\xFF\x00':
+            if not output[1] in (0xFF, 0x00):
                 raise Exception(
                     'Integra reported an error code %X' % output[1]
                 )
@@ -90,10 +97,10 @@ class Integra(object):
         # Function result
         elif output[0] != command[2]:
             raise Exception(
-                "Response to a wrong command - got %X expected %X" % (
-                    ord(output[0]), ord(command[2])
-                )
-            )
+                 "Response to a wrong command - got %s expected %s" % (
+                     output[0], command[2]
+                 )
+             )
 
         # Calculate response checksum
         calc_resp_sum = checksum(output[:-2])
@@ -137,22 +144,32 @@ class Integra(object):
             second=int(resp[12:14])
         )
 
-    def get_event(self, event_id=b'FFFFFF'):
-        resp = self.run_command(b'8C' + event_id)
-        return parse_event(resp)
+    def get_name(self, kind, number):
+        '''
+        Gets Integras object name. Caches responses.
+        '''
+        try:
+            name_rec = self._name_cache[(kind, number)]
+        except KeyError:
+            resp = self.run_command(b'EE' + hexlify(bytes([kind, number])))
+            name_rec = parse_name(resp)
+            name_rec.encoding = self.encoding
+            self._name_cache[(kind, number)] = name_rec
 
-#
-#
-# ''' Gets name of the zone and output. Could be easily extended to get name of users, expanders and so on
-# '''
-#
-#
-# def iName(number, devicetype):
-#     number = str(hex(number))[2:]
-#     if len(number) == 1:
-#         number = "0" + number
-#     r = sendcommand("EE" + devicetype + str(number))
-#     return r[3:].decode(config.encoding)
+        return name_rec
+
+    def get_event(self, event_id=b'FFFFFF'):
+        '''
+        Gets an event struct; to get a next event, call
+        integra.get_event(last_event.event_index)
+        '''
+        resp = self.run_command(b'8C' + event_id)
+        evt = parse_event(resp)
+        evt.integra = self
+        return evt
+
+    
+
 #
 #
 # ''' Checks violated zones. This make separate calls to get name of the violated zones. In a real life software,
