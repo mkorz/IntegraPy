@@ -35,11 +35,20 @@ def test_get_events(integra):
 
 
 def test_get_name(integra):
-    for nmb in range(1, 31):
-        try:
-            nme = integra.get_name(3, 129 + nmb)
-            print(nme)
-        except:
-            print('Błąd z ', nmb)
-
+    nme = integra.get_name(2, 1)
     assert 'Name:' in repr(nme)
+
+
+def test_get_violated_zones(integra):
+    viol = integra.get_violated_zones()
+    assert len(viol) > 0
+
+
+def test_get_outputs_set(integra):
+    outputs = integra.get_outputs_set()
+    assert type(outputs) == list
+
+
+def test_get_armed_partitions(integra):
+    parts = integra.get_armed_partitions()
+    assert type(parts) == list

@@ -19,6 +19,20 @@ from .constants import (
 )
 
 
+def list_of_bits_set(data, offset=1):
+    '''
+    Returns positions of bits set in a byte array
+    '''
+    bits = []
+
+    for bte in range(0, len(data)):
+        for bit in range(0, 8):
+            if 2 ** bit & (data[bte]):
+                bits.append(8 * bte + bit + offset)
+
+    return bits
+
+
 def checksum(command):
     '''
     Satel communication checksum
@@ -52,7 +66,7 @@ class EventRecord(LittleEndianStructure):
         ('_monitoring_s2', c_uint8, 2),
         ('present', c_uint8, 1),
         ('not_empty', c_uint8, 1),
-        ('year', c_uint8, 2),
+        ('_year', c_uint8, 2),
         ('day', c_uint8, 5),
         ('_class', c_uint8, 3),
         ('minutes_high', c_uint8, 4),
@@ -70,6 +84,7 @@ class EventRecord(LittleEndianStructure):
     ]
 
     integra = None
+    current_year = 0
 
     @property
     def monitoring_s1(self):
@@ -90,6 +105,10 @@ class EventRecord(LittleEndianStructure):
             minutes // 60,
             minutes % 60
         )
+
+    @property
+    def year(self):
+        return self.current_year // 4 * 4 + self._year
 
     @property
     def code(self):
@@ -145,8 +164,7 @@ class EventRecord(LittleEndianStructure):
         return (
             'Integra event: {0.year:02d}-{0.month:02d}-{0.day:02d} '
             '{0.time}, code: {0.code}, description: {0.description}, '
-            'object kind: {0.object_kind}, source number: {0.source_number}, '
-            'source: {0.source}, keypad: {0.keypad}'
+            'object kind: {0.object_kind}, source number: {0.source_number}'
         ).format(self)
 
 

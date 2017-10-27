@@ -2,6 +2,13 @@
 from binascii import unhexlify
 
 
+def test_list_of_bits_set():
+    from ..integra import list_of_bits_set
+    assert list_of_bits_set(
+        b'\x04 \x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80', 1
+    ) == [3, 14, 128]
+
+
 def test_checksum():
     from ..integra import checksum
 

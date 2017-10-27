@@ -14,7 +14,7 @@ from socket import socket, AF_INET, SOCK_STREAM
 
 from .constants import HEADER, FOOTER, HARDWARE_MODEL, LANGUAGES
 from .framing import (
-    checksum, prepare_frame, parse_event, parse_name
+    checksum, prepare_frame, parse_event, parse_name, list_of_bits_set
 )
 
 log = logging.getLogger(__name__)
@@ -27,6 +27,8 @@ def log_frame(msg, frame):
         hexlify(frame),
         len(frame)
     )
+
+
 
 
 class Integra(object):
@@ -163,57 +165,36 @@ class Integra(object):
         Gets an event struct; to get a next event, call
         integra.get_event(last_event.event_index)
         '''
+        current_time = self.get_time()
         resp = self.run_command(b'8C' + event_id)
+
         evt = parse_event(resp)
         evt.integra = self
+        evt.current_year = current_time.year
+
         return evt
 
-    
+    def get_violated_zones(self):
+        '''
+        Gets a list of violated zones
+        '''
+        resp = self.run_command(b'00')
+        return list_of_bits_set(resp, 1)
 
-#
-#
-# ''' Checks violated zones. This make separate calls to get name of the violated zones. In a real life software,
-# this should be cached and synchronised when data are change (i.e. rarely, as zones, outputs et ceterea usually
-# keep their names for a long time). In this demo, the more enabled outputs you have, the longer this script  will
-# take to execute
-# '''
-#
-#
-# def iViolation():
-#     r = sendcommand("00")
-#     v = ""
-#     for i in range(0, 15):
-#         for b in range(0, 7):
-#             if 2 ** b & (r[i]):
-#                 v += str(8 * i + b + 1) + " " + iName(8 * i + b + 1, ZONE) + ":*\n"
-#     print(v)
-#
-#
-# ''' Checks enabled outputs. See the comment for iViolation
-# '''
-#
-#
-# def iOutputs():
-#     r = sendcommand("17")
-#     o = ""
-#     for i in range(0, 15):
-#         for b in range(0, 7):
-#             if 2 ** b & r[i]:
-#                 o += str(8 * i + b + 1) + " " + iName(8 * i + b + 1, OUTPUT) + ": ON\n"
-#     print(o)
-#
-#
-# ''' Returns arm status for the partition (true: armed, false: disarmed)
-# '''
-#
-#
-# def iArmStatus(partition):
-#     r = sendcommand("0A")
-#     if 2 ** (partition % 8) & r[partition >> 3]:
-#         return True
-#     else:
-#         return False
-#
+    def get_outputs_set(self):
+        '''
+        Gets a list of numbers of outputs in ON state
+        '''
+        resp = self.run_command(b'17')
+        return list_of_bits_set(resp, 1)
+
+    def get_armed_partitions(self):
+        '''
+        Gets a list of armed partitions
+        '''
+        resp = self.run_command(b'0A')
+        return list_of_bits_set(resp, 1)
+
 #
 # ''' Returns a string that can be sent to enable/disable a given output
 # '''
