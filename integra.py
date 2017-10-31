@@ -29,8 +29,6 @@ def log_frame(msg, frame):
     )
 
 
-
-
 class Integra(object):
 
     def __init__(
@@ -153,7 +151,7 @@ class Integra(object):
         try:
             name_rec = self._name_cache[(kind, number)]
         except KeyError:
-            resp = self.run_command(b'EE' + hexlify(bytes([kind, number])))
+            resp = self.run_command(b'EE' + hexlify(bytearray([kind, number])))
             name_rec = parse_name(resp)
             name_rec.encoding = self.encoding
             self._name_cache[(kind, number)] = name_rec
