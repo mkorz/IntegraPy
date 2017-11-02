@@ -4,9 +4,10 @@ Satel integration protocol constants
 '''
 
 # device types as defined by Satel manual
-PARTITION = "00"
-ZONE = "01"
-OUTPUT = "04"
+PARTITION = 0
+ZONE = 1
+USER = 3
+OUTPUT = 4
 
 HEADER = b'\xFE\xFE'
 FOOTER = b'\xFE\x0D'

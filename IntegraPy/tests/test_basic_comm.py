@@ -5,7 +5,7 @@ from . import INTEGRA_HOST, INTEGRA_PORT, INTEGRA_USER_CODE
 
 @pytest.fixture
 def integra():
-    from ..integra import Integra
+    from .. import Integra
 
     return Integra(INTEGRA_USER_CODE, INTEGRA_HOST, INTEGRA_PORT)
 
@@ -44,11 +44,11 @@ def test_get_violated_zones(integra):
     assert len(viol) > 0
 
 
-def test_get_outputs_set(integra):
-    outputs = integra.get_outputs_set()
-    assert type(outputs) == list
+def test_get_active_outputs(integra):
+    outputs = integra.get_active_outputs()
+    assert type(outputs) == set
 
 
 def test_get_armed_partitions(integra):
     parts = integra.get_armed_partitions()
-    assert type(parts) == list
+    assert type(parts) == set

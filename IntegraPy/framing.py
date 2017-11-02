@@ -2,6 +2,12 @@
 '''
 Protocol framing
 '''
+try:
+    from itertools import zip_longest
+except ImportError:
+    from itertools import izip_longest as zip_longest
+
+
 from ctypes import (
     LittleEndianStructure,
     c_uint8,
@@ -18,19 +24,55 @@ from .constants import (
     OBJECT_KINDS
 )
 
+from bitarray import bitarray
 
-def list_of_bits_set(data, offset=1):
+
+def set_bits_positions(data, offset=1):
     '''
     Returns positions of bits set in a byte array
     '''
-    bits = []
+    ba = bitarray(endian='little')
+    ba.frombytes(bytes(data))
 
-    for bte in range(0, len(data)):
-        for bit in range(0, 8):
-            if 2 ** bit & (data[bte]):
-                bits.append(8 * bte + bit + offset)
-
+    bits = set(
+        idx + 1 for idx, bit in enumerate(ba) if bit
+    )
     return bits
+
+
+def bytes_with_bits_set(positions, length=128, offset=1):
+    '''
+    Creates a string with bits on selected positions set
+    '''
+    ba = bitarray(length, endian='little')
+    ba.setall(False)
+
+    for pos in positions:
+        ba[pos - offset] = True
+
+    return ba.tobytes()
+
+
+def pairwise(t):
+    it = iter(t)
+    return zip_longest(it, it, fillvalue='0')
+
+
+def format_user_code(code, prefix=None):
+    '''
+    Formats user code (given as an int) to Integra acceptale form
+    '''
+    def mangle(code):
+        return bytearray(
+            int(''.join(digits), 16) for digits in pairwise(str(code))
+        )
+
+    res = (mangle(prefix) if prefix else bytearray()) + mangle(code)
+
+    if len(res) < 8:
+        res += b'\xff' * (8 - len(res))
+
+    return bytes(res)
 
 
 def checksum(command):

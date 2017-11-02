@@ -2,29 +2,43 @@
 from binascii import unhexlify
 
 
-def test_list_of_bits_set():
-    from ..integra import list_of_bits_set
-    assert list_of_bits_set(bytearray(
+def test_set_bits_positions():
+    from .. import set_bits_positions
+    assert set_bits_positions(
+        b'\x04 \x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80',
+        1
+    ) == set([3, 14, 128])
+
+
+def test_bytes_with_bits_set():
+    from .. import bytes_with_bits_set
+    assert bytes_with_bits_set(set([3, 14, 128]), 128, 1) == \
         b'\x04 \x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80'
-    ), 1) == [3, 14, 128]
+
+
+def test_format_user_code():
+    from .. import format_user_code
+    assert format_user_code(1234) == b'\x12\x34\xFF\xFF\xFF\xFF\xFF\xFF'
+    assert format_user_code(1234, prefix=97) == \
+        b'\x97\x12\x34\xFF\xFF\xFF\xFF\xFF'
 
 
 def test_checksum():
-    from ..integra import checksum
+    from .. import checksum
 
     assert checksum(b'\x09') == 0xD7EB
     assert checksum(b'\x1C') == 0xD7FE
 
 
 def test_prepare_frame():
-    from ..integra import prepare_frame
+    from .. import prepare_frame
 
     assert prepare_frame('09') == unhexlify('FEFE09D7EBFE0D')
     assert prepare_frame('1C') == unhexlify('FEFE1CD7FEF0FE0D')
 
 
 def test_parse_event():
-    from ..integra import parse_event
+    from .. import parse_event
     result = parse_event(b'\x7f\x98\x83\x13]\xa6\n\x02\x06h\xde\xff\xff\xff')
 
     assert result.year == 2017 % 4

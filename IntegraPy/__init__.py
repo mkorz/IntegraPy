@@ -14,7 +14,8 @@ from socket import socket, AF_INET, SOCK_STREAM
 
 from .constants import HEADER, FOOTER, HARDWARE_MODEL, LANGUAGES
 from .framing import (
-    checksum, prepare_frame, parse_event, parse_name, list_of_bits_set
+    checksum, prepare_frame, parse_event, parse_name, set_bits_positions,
+    bytes_with_bits_set, format_user_code
 )
 
 log = logging.getLogger(__name__)
@@ -177,70 +178,29 @@ class Integra(object):
         Gets a list of violated zones
         '''
         resp = self.run_command(b'00')
-        return list_of_bits_set(resp, 1)
+        return set_bits_positions(resp, 1)
 
-    def get_outputs_set(self):
+    def get_active_outputs(self):
         '''
         Gets a list of numbers of outputs in ON state
         '''
         resp = self.run_command(b'17')
-        return list_of_bits_set(resp, 1)
+        return set_bits_positions(resp, 1)
+
+    def toggle_outputs(self, indexes):
+        '''
+        Toggles outputs with selected indexes;
+        !! Warning !! not tested
+        '''
+        self.run_command(
+            b'91' +
+            format_user_code(self.user_code) +
+            bytes_with_bits_set(indexes, 128, 1)
+        )
 
     def get_armed_partitions(self):
         '''
         Gets a list of armed partitions
         '''
         resp = self.run_command(b'0A')
-        return list_of_bits_set(resp, 1)
-
-#
-# ''' Returns a string that can be sent to enable/disable a given output
-# '''
-#
-#
-# def outputAsString (output):
-#     string = ""
-#     byte = output // 8 + 1
-#     while byte > 1:
-#         string += "00"
-#         byte -= 1
-#     out = 1 << (output % 8 - 1)
-#     result = str(hex(out)[2:])
-#     if len(result) == 1:
-#         result = "0" + result
-#     string += result
-#     while len(string) < 32:
-#         string += "0"
-#     return string
-#
-#
-# ''' Switches the state of a given output
-# '''
-#
-#
-# def iSwitchOutput(code, output):
-#     while len(code) < 16:
-#         code += "F"
-#     output = outputAsString(output)
-#     cmd = "91" + code + output
-#     r = sendcommand(cmd)
-#
-#
-# #### BASIC DEMO
-# ''' ... and now it is the time to demonstrate what have we learnt today
-# '''
-# if len(sys.argv) < 1:
-#     print("Execution: %s IP_ADDRESS_OF_THE_ETHM1_MODULE" % sys.argv[0], file=sys.stderr)
-#     sys.exit(1)
-#
-# iVersion()
-# print("Integra time: " + iTime())
-# partname = iName(1, PARTITION)
-# print("%s armed: %s" % (partname, iArmStatus(0)))
-# print("Violated zones:")
-# iViolation()
-# print("Active outputs:")
-# iOutputs()
-# print("Switching output:")
-# #iSwitchOutput(config.usercode, 11)
-# print("Thanks for watching.")
+        return set_bits_positions(resp, 1)
