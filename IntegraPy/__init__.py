@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 from __future__ import unicode_literals, print_function
 '''
-integra -- a module implementing Satel intgration protocol for
+integra -- a module implementing Satel integration protocol for
 Satel Integra and ETHM-1 modules
 '''
 import time

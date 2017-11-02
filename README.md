@@ -3,7 +3,7 @@
 #### About
 
 This repository contains a simple
-Python library easing access to Satel's Intgra security hub.
+Python library easing access to Satel's Integra security hub.
 
 #### Installation
 ```bash

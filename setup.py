@@ -6,7 +6,7 @@ setup(
     name='IntegraPy',
     version=version,
     description=u"Satel's Integra secrity hub interface",
-    author='M. Korz & Michał Węgrzynek',
+    author='Marcin Korzonek & Michał Węgrzynek & al.',
     packages=[
         'IntegraPy'
     ],
