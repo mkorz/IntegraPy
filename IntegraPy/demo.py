@@ -12,6 +12,9 @@ Time:             {1}
 Armed partitions: {2}
 Violated zones:   {3}
 Active outputs:   {4}
+-------------------------------------------------------------------------------
+10 last events:
+{5}
 '''
 
 if len(sys.argv) < 2:
@@ -32,6 +35,16 @@ active_outputs = ', '.join(
     for out in integra.get_active_outputs()
 )
 
+last_events = 'Date & time      | Code | Source\n'
+event_idx = b'FFFFFF'
+for idx in range(10):
+    res = integra.get_event(event_idx)
+    last_events += (
+        '{0.year:02d}-{0.month:02d}-{0.day:02d} '
+        '{0.time} |  {0.code} | {0.source_number}\n'
+    ).format(res)
+    event_idx = res.event_index
+
 
 print(
     template.format(
@@ -39,6 +52,7 @@ print(
         integra.get_time(),
         armed_partitions,
         violated_zones,
-        active_outputs
+        active_outputs,
+        last_events
     )
 )

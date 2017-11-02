@@ -1,15 +1,9 @@
-#Integra
+# IntegraPy
 
 #### About
 
-This repository contains a sample Python script demonstrating how to connect to the Satel Integra via the ETHM-1 module and perform basic operations.
-
-This has been written in few hours, so do not expect high quality code there (especially as Python is not the language of my first choice, although I would love to know it better).
-
-It theoretically requires Python 3, but I am sure you smart cookie can easily modify it to work with 2.6/2.7.
-
-I am using a very similar code myself  to send notification using <http://prowlapp.com/> to my phone whenever house is armed or disarmed.
-
+This repository contains a simple
+Python library easing access to Satel's Intgra security hub.
 Enjoy!
 
 
@@ -28,5 +22,3 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>
-
-

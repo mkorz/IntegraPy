@@ -30,7 +30,6 @@ def test_get_events(integra):
     event_idx = b'FFFFFF'
     for idx in range(10):
         res = integra.get_event(event_idx)
-        print(repr(res))
         event_idx = res.event_index
 
 
