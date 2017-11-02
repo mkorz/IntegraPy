@@ -50,3 +50,4 @@ Temporary Items
 __pycache__
 .cache
 *.pyc
+*egg-info*

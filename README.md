@@ -4,9 +4,15 @@
 
 This repository contains a simple
 Python library easing access to Satel's Intgra security hub.
-Enjoy!
 
+#### Installation
+```bash
+pip install IntegraPy```
 
+#### Demo
+```bash
+python -m IntegraPy.demo <IP of the hub>
+```
 ##### Disclaimer and legal boring stuff
 I am not affiliated with Satel. Integra and all other Satel product names are trademarks or registered trademarks of Satel. All other company and product names are trademarks or registeredtrade marks of their respective companies.
 
