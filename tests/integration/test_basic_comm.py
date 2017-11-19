@@ -5,7 +5,7 @@ from . import INTEGRA_HOST, INTEGRA_PORT, INTEGRA_USER_CODE
 
 @pytest.fixture
 def integra():
-    from .. import Integra
+    from IntegraPy import Integra
 
     return Integra(INTEGRA_USER_CODE, INTEGRA_HOST, INTEGRA_PORT)
 
