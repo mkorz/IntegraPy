@@ -194,8 +194,8 @@ class Integra(object):
         '''
         self.run_command(
             b'91' +
-            format_user_code(self.user_code) +
-            bytes_with_bits_set(indexes, 128, 1)
+            hexlify(format_user_code(self.user_code) +
+            bytes_with_bits_set(indexes, 128, 1))
         )
 
     def get_armed_partitions(self):
