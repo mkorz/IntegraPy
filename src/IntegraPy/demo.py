@@ -23,7 +23,7 @@ if len(sys.argv) < 2:
 
 integra = Integra(user_code=1234, host=sys.argv[1])
 armed_partitions = ', '.join(
-    integra.get_name(PARTITION, part)
+    integra.get_name(PARTITION, part).name
     for part in integra.get_armed_partitions()
 )
 violated_zones = ', '.join(
