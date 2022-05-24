@@ -1,9 +1,15 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, print_function
 import sys
+import requests
+import time
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 from .constants import PARTITION, ZONE, OUTPUT
 from . import Integra
+
+
 
 template = '''\
 Model:            {0[model]}
@@ -21,38 +27,32 @@ if len(sys.argv) < 2:
     print("demo <IP_ADDRESS_OF_THE_ETHM1_MODULE>", file=sys.stderr)
     sys.exit(1)
 
+
+
 integra = Integra(user_code=1234, host=sys.argv[1])
 armed_partitions = ', '.join(
     integra.get_name(PARTITION, part).name
     for part in integra.get_armed_partitions()
 )
-violated_zones = ', '.join(
-    integra.get_name(ZONE, zone).name
-    for zone in integra.get_violated_zones()
-)
-active_outputs = ', '.join(
-    integra.get_name(OUTPUT, out).name
-    for out in integra.get_active_outputs()
+
+def checkArmStatus():
+    if "Camera's" in armed_partitions and "" in violated_zones :
+           print ("Armed")
+           r = requests.post('https://fbb8bdd9a.l.home.camect.com/api/EnableAlert', data={'Enable': '0'}, verify=False, auth=('admin', 'leenknegtjasper'))
+    else:
+           print ("Disarmed")
+           r = requests.post('https://fbb8bdd9a.l.home.camect.com/api/EnableAlert', verify=False, auth=('admin', 'leenknegtjasper'))
+
+while(True):
+    armed_partitions = ', '.join(
+        integra.get_name(PARTITION, part).name
+        for part in integra.get_armed_partitions()
 )
 
-last_events = 'Date & time      | Code | Source\n'
-event_idx = b'FFFFFF'
-for idx in range(10):
-    res = integra.get_event(event_idx)
-    last_events += (
-        '{0.year:02d}-{0.month:02d}-{0.day:02d} '
-        '{0.time} |  {0.code} | {0.source_number}\n'
-    ).format(res)
-    event_idx = res.event_index
-
-
-print(
-    template.format(
-        integra.get_version(),
-        integra.get_time(),
-        armed_partitions,
-        violated_zones,
-        active_outputs,
-        last_events
-    )
+    violated_zones = ', '.join(
+        integra.get_name(ZONE, zone).name
+        for zone in integra.get_violated_zones()
 )
+
+    checkArmStatus()
+    time.sleep(3)
